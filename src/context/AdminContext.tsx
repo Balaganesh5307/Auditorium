@@ -14,6 +14,8 @@ import {
   dbRowToTeamData,
   fetchEventBrandingFromDb,
   saveEventBrandingToDb,
+  fetchGridConfigFromDb,
+  saveGridConfigToDb,
 } from '../lib/supabase';
 
 // Default grid config
@@ -171,9 +173,10 @@ export function AdminProvider({ children }: { children: ReactNode }) {
       }));
 
       try {
-        const [fetchedTeams, fetchedBranding] = await Promise.all([
+        const [fetchedTeams, fetchedBranding, fetchedGrid] = await Promise.all([
           fetchTeamsFromDb(),
           fetchEventBrandingFromDb(),
+          fetchGridConfigFromDb(),
         ]);
 
         if (!isMounted) return;
@@ -185,6 +188,45 @@ export function AdminProvider({ children }: { children: ReactNode }) {
             eventDate: fetchedBranding.eventDate,
             eventYear: fetchedBranding.eventYear,
           }));
+        }
+
+        if (fetchedGrid) {
+          setState((prev) => {
+            const actualTables = fetchedGrid.numTables;
+            const newTeams: TeamsMap = {};
+            let count = 0;
+            for (const r of fetchedGrid.rows) {
+              for (const c of fetchedGrid.cols) {
+                if (count >= actualTables) break;
+                const tableId = `${r}${c}`;
+                if (prev.teams[tableId]) {
+                  newTeams[tableId] = prev.teams[tableId];
+                } else {
+                  newTeams[tableId] = {
+                    table: tableId,
+                    teamName: `Team ${tableId}`,
+                    position: tableId,
+                    members: [
+                      { name: 'Member 1', role: 'Team Leader' },
+                      { name: 'Member 2', role: 'Developer' },
+                      { name: 'Member 3', role: 'Designer' },
+                      { name: 'Member 4', role: 'Engineer' },
+                    ],
+                    projectDescription: 'Project description pending',
+                  };
+                }
+                count++;
+              }
+              if (count >= actualTables) break;
+            }
+            return {
+              ...prev,
+              rows: fetchedGrid.rows,
+              cols: fetchedGrid.cols,
+              numTables: actualTables,
+              teams: newTeams,
+            };
+          });
         }
 
         if (fetchedTeams && Object.keys(fetchedTeams).length > 0) {
@@ -235,6 +277,50 @@ export function AdminProvider({ children }: { children: ReactNode }) {
                 eventDate: row.position || prev.eventDate,
                 eventYear: row.project_description || prev.eventYear,
               }));
+            } else if (row && row.table_id === '_grid_config_') {
+              try {
+                const parsed = JSON.parse(row.team_name);
+                if (Array.isArray(parsed.rows) && Array.isArray(parsed.cols)) {
+                  setState((prev) => {
+                    const actualTables = typeof parsed.numTables === 'number' ? parsed.numTables : parsed.rows.length * parsed.cols.length;
+                    const newTeams: TeamsMap = {};
+                    let count = 0;
+                    for (const r of parsed.rows) {
+                      for (const c of parsed.cols) {
+                        if (count >= actualTables) break;
+                        const tableId = `${r}${c}`;
+                        if (prev.teams[tableId]) {
+                          newTeams[tableId] = prev.teams[tableId];
+                        } else {
+                          newTeams[tableId] = {
+                            table: tableId,
+                            teamName: `Team ${tableId}`,
+                            position: tableId,
+                            members: [
+                              { name: 'Member 1', role: 'Team Leader' },
+                              { name: 'Member 2', role: 'Developer' },
+                              { name: 'Member 3', role: 'Designer' },
+                              { name: 'Member 4', role: 'Engineer' },
+                            ],
+                            projectDescription: 'Project description pending',
+                          };
+                        }
+                        count++;
+                      }
+                      if (count >= actualTables) break;
+                    }
+                    return {
+                      ...prev,
+                      rows: parsed.rows,
+                      cols: parsed.cols,
+                      numTables: actualTables,
+                      teams: newTeams,
+                    };
+                  });
+                }
+              } catch {
+                // ignore json error
+              }
             } else if (row && row.table_id && !row.table_id.startsWith('_')) {
               const updatedTeam = dbRowToTeamData(row);
               setState((prev) => ({
@@ -330,6 +416,11 @@ export function AdminProvider({ children }: { children: ReactNode }) {
         if (count >= actualTables) break;
       }
       return { ...prev, rows, cols, numTables: actualTables, teams: newTeams };
+    });
+
+    // Automatically sync grid layout to Supabase DB for all browsers & users
+    saveGridConfigToDb(rows, cols, actualTables).catch((e) => {
+      console.warn('[Supabase] Failed to persist grid config:', e);
     });
   }, []);
 
@@ -554,6 +645,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
       eventYear: DEFAULT_EVENT_YEAR,
       isAdmin: true,
     }));
+    saveGridConfigToDb(DEFAULT_ROWS, DEFAULT_COLS, DEFAULT_NUM_TABLES).catch(console.warn);
   }, []);
 
   return (

@@ -217,45 +217,64 @@ export async function bulkUpsertTeamsToDb(teamsMap: TeamsMap): Promise<{ success
 }
 
 /**
- * Fetch grid configuration from Supabase (optional)
+ * Fetch grid configuration from Supabase (Rows, Cols, Number of Tables)
  */
 export async function fetchGridConfigFromDb(): Promise<{ rows: string[]; cols: number[]; numTables: number } | null> {
   if (!supabase) return null;
   try {
     const { data, error } = await supabase
-      .from('grid_config')
+      .from('teams')
       .select('*')
-      .eq('id', 'main')
-      .single();
+      .eq('table_id', '_grid_config_')
+      .maybeSingle();
 
     if (error || !data) {
       return null;
     }
 
-    return {
-      rows: data.rows,
-      cols: data.cols,
-      numTables: data.num_tables,
-    };
-  } catch {
+    try {
+      const parsed = JSON.parse(data.team_name);
+      if (Array.isArray(parsed.rows) && Array.isArray(parsed.cols)) {
+        return {
+          rows: parsed.rows,
+          cols: parsed.cols,
+          numTables: typeof parsed.numTables === 'number' ? parsed.numTables : parsed.rows.length * parsed.cols.length,
+        };
+      }
+    } catch {
+      // Ignore JSON parse errors
+    }
+
+    return null;
+  } catch (err) {
+    console.warn('[Supabase] Error fetching grid config:', err);
     return null;
   }
 }
 
 /**
- * Save grid configuration to Supabase (optional)
+ * Save grid configuration to Supabase
  */
 export async function saveGridConfigToDb(rows: string[], cols: number[], numTables: number): Promise<boolean> {
   if (!supabase) return false;
   try {
+    const payload = JSON.stringify({
+      numRows: rows.length,
+      numCols: cols.length,
+      numTables,
+      rows,
+      cols,
+    });
+
     const { error } = await supabase
-      .from('grid_config')
+      .from('teams')
       .upsert({
-        id: 'main',
-        rows,
-        cols,
-        num_tables: numTables,
-      }, { onConflict: 'id' });
+        table_id: '_grid_config_',
+        team_name: payload,
+        position: `${rows.length}x${cols.length}`,
+        project_description: String(numTables),
+        members: [],
+      }, { onConflict: 'table_id' });
 
     if (error) {
       console.warn('[Supabase] Failed to save grid config:', error.message);

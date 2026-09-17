@@ -171,9 +171,9 @@ export default function AdminPanel() {
     setNumCols(parsedC);
     setNumTablesInput(parsedT);
     setGridConfig(parsedR, parsedC, parsedT);
-    setUploadStatus('Grid updated successfully!');
+    setUploadStatus(`Grid layout updated to ${parsedR} × ${parsedC} (${parsedT} tables) & synced to DB!`);
     setError(null);
-    setTimeout(() => setUploadStatus(null), 3000);
+    setTimeout(() => setUploadStatus(null), 3500);
   }, [parsedR, parsedC, parsedT, setGridConfig]);
 
   const handleFileUpload = useCallback(
