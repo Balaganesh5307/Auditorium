@@ -9,11 +9,15 @@ export default function AdminPanel() {
     cols,
     numTables,
     teams,
+    eventName,
+    eventDate,
+    eventYear,
     toggleAdmin,
     logoutAdmin,
     setGridConfig,
     setTeamsFromUpload,
     updateSingleTeam,
+    updateEventBranding,
     resetToDefaults,
   } = useAdmin();
 
@@ -25,6 +29,36 @@ export default function AdminPanel() {
   const [error, setError] = useState<string | null>(null);
   const [isSavingTable, setIsSavingTable] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Event Branding state
+  const [inputEventName, setInputEventName] = useState(eventName || 'BUILDATHON');
+  const [inputEventDate, setInputEventDate] = useState(eventDate || 'September 2026');
+  const [inputEventYear, setInputEventYear] = useState(eventYear || '2026');
+  const [isSavingBranding, setIsSavingBranding] = useState(false);
+
+  useEffect(() => {
+    setInputEventName(eventName || 'BUILDATHON');
+    setInputEventDate(eventDate || 'September 2026');
+    setInputEventYear(eventYear || '2026');
+  }, [eventName, eventDate, eventYear]);
+
+  const handleSaveBranding = useCallback(async () => {
+    setIsSavingBranding(true);
+    setError(null);
+    try {
+      const saved = await updateEventBranding(inputEventName, inputEventDate, inputEventYear);
+      if (saved) {
+        setUploadStatus('Event branding saved to DB & updated live across the site!');
+      } else {
+        setUploadStatus('Event branding updated live!');
+      }
+      setTimeout(() => setUploadStatus(null), 3000);
+    } catch {
+      setError('Failed to update event branding');
+    } finally {
+      setIsSavingBranding(false);
+    }
+  }, [inputEventName, inputEventDate, inputEventYear, updateEventBranding]);
 
   // Compute all available active table IDs
   const activeTableIds = useMemo(() => {
@@ -262,6 +296,54 @@ export default function AdminPanel() {
         </div>
 
         <div className="admin-panel-body">
+          {/* Event & Branding Configuration */}
+          <div className="admin-section">
+            <h4 className="admin-section-title">Event & Hackathon Branding</h4>
+            <p className="admin-hint">
+              Customize event title, date, and year across intro, navbar, and 3D stage
+            </p>
+            <div className="admin-grid-inputs" style={{ gridTemplateColumns: '1fr', gap: '0.6rem' }}>
+              <div className="admin-input-group">
+                <label>Hackathon / Event Name</label>
+                <input
+                  type="text"
+                  placeholder="e.g. BUILDATHON"
+                  value={inputEventName}
+                  onChange={(e) => setInputEventName(e.target.value)}
+                />
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: '0.5rem' }}>
+                <div className="admin-input-group">
+                  <label>Date & Month</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. September 2026"
+                    value={inputEventDate}
+                    onChange={(e) => setInputEventDate(e.target.value)}
+                  />
+                </div>
+                <div className="admin-input-group">
+                  <label>Year / Edition</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. 2026"
+                    value={inputEventYear}
+                    onChange={(e) => setInputEventYear(e.target.value)}
+                  />
+                </div>
+              </div>
+            </div>
+            <button
+              type="button"
+              className="admin-btn admin-btn-primary"
+              onClick={handleSaveBranding}
+              disabled={isSavingBranding}
+              style={{ marginTop: '0.7rem' }}
+            >
+              {isSavingBranding ? '💾 Saving Branding to DB...' : '💾 Save Event Branding'}
+            </button>
+          </div>
+
           {/* Grid Configuration */}
           <div className="admin-section">
             <h4 className="admin-section-title">Grid Configuration</h4>

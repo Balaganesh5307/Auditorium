@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useRef, lazy, Suspense } from 'react';
+import { useState, useCallback, useMemo, useRef, useEffect, lazy, Suspense } from 'react';
 import AuditoriumScene from './scene/AuditoriumScene';
 import IntroScreen from './components/IntroScreen';
 import TeamPanel from './components/TeamPanel';
@@ -22,9 +22,15 @@ export default function App() {
     rows = DEFAULT_ROWS,
     cols = DEFAULT_COLS,
     teams = {},
+    eventName = 'BUILDATHON',
+    eventYear = '2026',
     isAdmin,
     isLoginModalOpen,
   } = useAdmin();
+
+  useEffect(() => {
+    document.title = `${eventName} ${eventYear} — Auditorium`;
+  }, [eventName, eventYear]);
 
   const [appState, setAppState] = useState<'intro' | 'entering' | 'auditorium' | 'table'>('intro');
   const [cameraState, setCameraState] = useState<CameraState>('INTRO');
@@ -133,6 +139,8 @@ export default function App() {
         rows={rows}
         cols={cols}
         teams={teams}
+        eventName={eventName}
+        eventYear={eventYear}
       />
 
       <IntroScreen

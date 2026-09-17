@@ -12,12 +12,18 @@ import {
   supabase,
   type DbTeamRow,
   dbRowToTeamData,
+  fetchEventBrandingFromDb,
+  saveEventBrandingToDb,
 } from '../lib/supabase';
 
 // Default grid config
 const DEFAULT_ROWS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L'];
 const DEFAULT_COLS = [1, 2, 3, 4, 5];
 const DEFAULT_NUM_TABLES = 60; // 12 × 5
+
+export const DEFAULT_EVENT_NAME = 'BUILDATHON';
+export const DEFAULT_EVENT_DATE = 'September 2026';
+export const DEFAULT_EVENT_YEAR = '2026';
 
 export type DbSyncStatus = 'idle' | 'syncing' | 'connected' | 'offline' | 'error';
 
@@ -26,6 +32,9 @@ interface AdminState {
   cols: number[];
   numTables: number;
   teams: TeamsMap;
+  eventName: string;
+  eventDate: string;
+  eventYear: string;
   isAdmin: boolean;
   isAuthenticated: boolean;
   isLoginModalOpen: boolean;
@@ -40,6 +49,7 @@ interface AdminContextType extends AdminState {
   updateSingleTeam: (tableId: string, teamData: Partial<TeamData>) => Promise<boolean>;
   toggleAdmin: () => void;
   resetToDefaults: () => void;
+  updateEventBranding: (name: string, date: string, year: string) => Promise<boolean>;
   syncAllToSupabase: () => Promise<boolean>;
   refreshFromSupabase: () => Promise<boolean>;
   openLoginModal: () => void;
@@ -76,6 +86,9 @@ function loadFromStorage(): Partial<AdminState> | null {
           cols: parsed.cols.length > 0 ? parsed.cols : DEFAULT_COLS,
           numTables: parsed.numTables || DEFAULT_NUM_TABLES,
           teams: parsed.teams || defaultTeams,
+          eventName: parsed.eventName || DEFAULT_EVENT_NAME,
+          eventDate: parsed.eventDate || DEFAULT_EVENT_DATE,
+          eventYear: parsed.eventYear || DEFAULT_EVENT_YEAR,
         };
       }
     }
@@ -94,6 +107,9 @@ function saveToStorage(state: AdminState) {
         cols: state.cols,
         numTables: state.numTables,
         teams: state.teams,
+        eventName: state.eventName,
+        eventDate: state.eventDate,
+        eventYear: state.eventYear,
       })
     );
   } catch {
@@ -112,6 +128,9 @@ export function AdminProvider({ children }: { children: ReactNode }) {
       cols: stored?.cols || DEFAULT_COLS,
       numTables: stored?.numTables || DEFAULT_NUM_TABLES,
       teams: stored?.teams || defaultTeams,
+      eventName: stored?.eventName || DEFAULT_EVENT_NAME,
+      eventDate: stored?.eventDate || DEFAULT_EVENT_DATE,
+      eventYear: stored?.eventYear || DEFAULT_EVENT_YEAR,
       isAdmin: false,
       isAuthenticated: storedAuth,
       isLoginModalOpen: false,
@@ -128,7 +147,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     saveToStorage(state);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state.rows, state.cols, state.numTables, state.teams]);
+  }, [state.rows, state.cols, state.numTables, state.teams, state.eventName, state.eventDate, state.eventYear]);
 
   // Initial fetch and Realtime sync with Supabase
   useEffect(() => {
@@ -152,9 +171,21 @@ export function AdminProvider({ children }: { children: ReactNode }) {
       }));
 
       try {
-        const fetchedTeams = await fetchTeamsFromDb();
+        const [fetchedTeams, fetchedBranding] = await Promise.all([
+          fetchTeamsFromDb(),
+          fetchEventBrandingFromDb(),
+        ]);
 
         if (!isMounted) return;
+
+        if (fetchedBranding) {
+          setState((prev) => ({
+            ...prev,
+            eventName: fetchedBranding.eventName,
+            eventDate: fetchedBranding.eventDate,
+            eventYear: fetchedBranding.eventYear,
+          }));
+        }
 
         if (fetchedTeams && Object.keys(fetchedTeams).length > 0) {
           setState((prev) => ({
@@ -197,7 +228,14 @@ export function AdminProvider({ children }: { children: ReactNode }) {
           if (!isMounted) return;
           if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
             const row = payload.new as DbTeamRow;
-            if (row && row.table_id) {
+            if (row && row.table_id === '_event_branding_') {
+              setState((prev) => ({
+                ...prev,
+                eventName: row.team_name || prev.eventName,
+                eventDate: row.position || prev.eventDate,
+                eventYear: row.project_description || prev.eventYear,
+              }));
+            } else if (row && row.table_id && !row.table_id.startsWith('_')) {
               const updatedTeam = dbRowToTeamData(row);
               setState((prev) => ({
                 ...prev,
@@ -476,6 +514,34 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  const updateEventBranding = useCallback(
+    async (name: string, date: string, year: string): Promise<boolean> => {
+      const cleanName = name.trim() || DEFAULT_EVENT_NAME;
+      const cleanDate = date.trim() || DEFAULT_EVENT_DATE;
+      const cleanYear = year.trim() || DEFAULT_EVENT_YEAR;
+
+      setState((prev) => ({
+        ...prev,
+        eventName: cleanName,
+        eventDate: cleanDate,
+        eventYear: cleanYear,
+      }));
+
+      try {
+        const saved = await saveEventBrandingToDb({
+          eventName: cleanName,
+          eventDate: cleanDate,
+          eventYear: cleanYear,
+        });
+        return saved;
+      } catch (err) {
+        console.warn('[Supabase] Failed to save event branding:', err);
+        return false;
+      }
+    },
+    []
+  );
+
   const resetToDefaults = useCallback(() => {
     setState((prev) => ({
       ...prev,
@@ -483,6 +549,9 @@ export function AdminProvider({ children }: { children: ReactNode }) {
       cols: DEFAULT_COLS,
       numTables: DEFAULT_NUM_TABLES,
       teams: defaultTeams,
+      eventName: DEFAULT_EVENT_NAME,
+      eventDate: DEFAULT_EVENT_DATE,
+      eventYear: DEFAULT_EVENT_YEAR,
       isAdmin: true,
     }));
   }, []);
@@ -494,6 +563,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
         setGridConfig,
         setTeamsFromUpload,
         updateSingleTeam,
+        updateEventBranding,
         toggleAdmin,
         resetToDefaults,
         syncAllToSupabase,

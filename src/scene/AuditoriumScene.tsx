@@ -21,6 +21,8 @@ interface AuditoriumSceneProps {
   rows?: string[];
   cols?: number[];
   teams?: TeamsMap;
+  eventName?: string;
+  eventYear?: string;
 }
 
 const AuditoriumScene = memo(function AuditoriumScene({
@@ -32,6 +34,8 @@ const AuditoriumScene = memo(function AuditoriumScene({
   rows = DEFAULT_ROWS,
   cols = DEFAULT_COLS,
   teams = {},
+  eventName = 'BUILDATHON',
+  eventYear = '2026',
 }: AuditoriumSceneProps) {
   const safeRows = rows || DEFAULT_ROWS;
   const safeCols = cols || DEFAULT_COLS;
@@ -66,7 +70,12 @@ const AuditoriumScene = memo(function AuditoriumScene({
         cols={safeCols}
       />
 
-      <Auditorium rows={safeRows} cols={safeCols} />
+      <Auditorium
+        rows={safeRows}
+        cols={safeCols}
+        eventName={eventName}
+        eventYear={eventYear}
+      />
 
       <SeatingMap
         selectedTableId={selectedTableId}

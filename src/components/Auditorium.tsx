@@ -25,6 +25,8 @@ const MAT_WALL_SIDE = new THREE.MeshStandardMaterial({ color: '#ffffff', roughne
 interface AuditoriumProps {
   rows?: string[];
   cols?: number[];
+  eventName?: string;
+  eventYear?: string;
 }
 
 // ── Reusable Staircase Component with 4 stepped tiers & red edge accents ──
@@ -97,7 +99,12 @@ const StageStairs = memo(function StageStairs({
   );
 });
 
-const Auditorium = memo(function Auditorium({ rows = DEFAULT_ROWS, cols = DEFAULT_COLS }: AuditoriumProps) {
+const Auditorium = memo(function Auditorium({
+  rows = DEFAULT_ROWS,
+  cols = DEFAULT_COLS,
+  eventName = 'BUILDATHON',
+  eventYear = '2026',
+}: AuditoriumProps) {
   const safeRows = rows || DEFAULT_ROWS;
   const safeCols = cols || DEFAULT_COLS;
 
@@ -236,7 +243,7 @@ const Auditorium = memo(function Auditorium({ rows = DEFAULT_ROWS, cols = DEFAUL
         anchorY="middle"
         letterSpacing={0.12}
       >
-        BUILDATHON
+        {eventName}
       </Text>
       <Text
         position={[0, 2.1, backZ + 0.25]}
@@ -246,7 +253,7 @@ const Auditorium = memo(function Auditorium({ rows = DEFAULT_ROWS, cols = DEFAUL
         anchorY="middle"
         letterSpacing={0.4}
       >
-        2026
+        {eventYear}
       </Text>
 
       {/* ── Steps / Stairs recessed completely INSIDE the stage ── */}

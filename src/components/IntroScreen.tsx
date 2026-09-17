@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import { useAdmin } from '../context/AdminContext';
+import { formatBrandingTitle } from '../utils/branding';
 
 interface IntroScreenProps {
   visible: boolean;
@@ -6,6 +8,7 @@ interface IntroScreenProps {
 }
 
 export default function IntroScreen({ visible, onEnter }: IntroScreenProps) {
+  const { eventName, eventDate } = useAdmin();
   const [shouldRender, setShouldRender] = useState(visible);
 
   useEffect(() => {
@@ -30,9 +33,9 @@ export default function IntroScreen({ visible, onEnter }: IntroScreenProps) {
       }}
     >
       <div className="intro-branding">
-        <p className="intro-year">September 2026</p>
+        <p className="intro-year">{eventDate}</p>
         <h1 className="intro-title">
-          BUILD<span>ATHON</span>
+          {formatBrandingTitle(eventName)}
         </h1>
         <p className="intro-subtitle">Interactive Auditorium Experience</p>
         <div className="intro-line" />

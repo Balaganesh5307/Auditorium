@@ -150,6 +150,7 @@ export async function fetchTeamsFromDb(): Promise<TeamsMap | null> {
 
     const map: TeamsMap = {};
     for (const row of data as DbTeamRow[]) {
+      if (row.table_id && row.table_id.startsWith('_')) continue;
       map[row.table_id] = dbRowToTeamData(row);
     }
     return map;
@@ -263,6 +264,66 @@ export async function saveGridConfigToDb(rows: string[], cols: number[], numTabl
     return true;
   } catch (err) {
     console.warn('[Supabase] Error saving grid config:', err);
+    return false;
+  }
+}
+
+/**
+ * Event Branding Interface (Hackathon name, date, year)
+ */
+export interface EventBranding {
+  eventName: string;
+  eventDate: string;
+  eventYear: string;
+}
+
+/**
+ * Fetch Event Branding configuration from Supabase
+ */
+export async function fetchEventBrandingFromDb(): Promise<EventBranding | null> {
+  if (!supabase) return null;
+  try {
+    const { data, error } = await supabase
+      .from('teams')
+      .select('*')
+      .eq('table_id', '_event_branding_')
+      .maybeSingle();
+
+    if (error || !data) return null;
+    return {
+      eventName: data.team_name || 'BUILDATHON',
+      eventDate: data.position || 'September 2026',
+      eventYear: data.project_description || '2026',
+    };
+  } catch (err) {
+    console.warn('[Supabase] Error fetching event branding:', err);
+    return null;
+  }
+}
+
+/**
+ * Save Event Branding configuration to Supabase
+ */
+export async function saveEventBrandingToDb(branding: EventBranding): Promise<boolean> {
+  if (!supabase) return false;
+  try {
+    const { error } = await supabase
+      .from('teams')
+      .upsert({
+        table_id: '_event_branding_',
+        team_name: branding.eventName,
+        position: branding.eventDate,
+        project_description: branding.eventYear,
+        members: [],
+      }, { onConflict: 'table_id' });
+
+    if (error) {
+      console.warn('[Supabase] Failed to save event branding:', error.message);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.warn('[Supabase] Error saving event branding:', err);
     return false;
   }
 }

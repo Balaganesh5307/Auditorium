@@ -1,12 +1,13 @@
 import { useRef, useState, useCallback } from 'react';
 import { useAdmin } from '../context/AdminContext';
+import { formatBrandingTitle } from '../utils/branding';
 
 interface NavigationProps {
   onBackToHome: () => void;
 }
 
 export default function Navigation({ onBackToHome }: NavigationProps) {
-  const { isAuthenticated, openLoginModal, toggleAdmin } = useAdmin();
+  const { isAuthenticated, openLoginModal, toggleAdmin, eventName, eventYear } = useAdmin();
   const clickCountRef = useRef(0);
   const lastClickTimeRef = useRef(0);
   const [pulseActive, setPulseActive] = useState(false);
@@ -47,14 +48,14 @@ export default function Navigation({ onBackToHome }: NavigationProps) {
       <div
         className={`nav-brand ${pulseActive ? 'secret-pulse' : ''}`}
         onClick={handleBrandClick}
-        title="BUILDATHON 2026"
+        title={`${eventName} ${eventYear}`}
         role="button"
         tabIndex={0}
         onKeyDown={(e) => {
           if (e.key === 'Enter') handleBrandClick();
         }}
       >
-        BUILD<span>ATHON</span> 2026
+        {formatBrandingTitle(eventName)} {eventYear}
       </div>
       <button className="nav-back-btn visible" onClick={onBackToHome}>
         <span className="arrow">←</span>
