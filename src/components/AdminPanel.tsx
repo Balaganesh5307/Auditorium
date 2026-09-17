@@ -302,43 +302,43 @@ export default function AdminPanel() {
             <p className="admin-hint">
               Customize event title, date, and year across intro, navbar, and 3D stage
             </p>
-            <div className="admin-grid-inputs" style={{ gridTemplateColumns: '1fr', gap: '0.6rem' }}>
-              <div className="admin-input-group">
-                <label>Hackathon / Event Name</label>
+
+            <div className="admin-input-group" style={{ marginBottom: '0.75rem' }}>
+              <label>Hackathon / Event Name</label>
+              <input
+                type="text"
+                placeholder="e.g. BUILDATHON"
+                value={inputEventName}
+                onChange={(e) => setInputEventName(e.target.value)}
+              />
+            </div>
+
+            <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '0.85rem' }}>
+              <div className="admin-input-group" style={{ flex: 1.4 }}>
+                <label>Date & Month</label>
                 <input
                   type="text"
-                  placeholder="e.g. BUILDATHON"
-                  value={inputEventName}
-                  onChange={(e) => setInputEventName(e.target.value)}
+                  placeholder="e.g. September 2026"
+                  value={inputEventDate}
+                  onChange={(e) => setInputEventDate(e.target.value)}
                 />
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: '0.5rem' }}>
-                <div className="admin-input-group">
-                  <label>Date & Month</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. September 2026"
-                    value={inputEventDate}
-                    onChange={(e) => setInputEventDate(e.target.value)}
-                  />
-                </div>
-                <div className="admin-input-group">
-                  <label>Year / Edition</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. 2026"
-                    value={inputEventYear}
-                    onChange={(e) => setInputEventYear(e.target.value)}
-                  />
-                </div>
+              <div className="admin-input-group" style={{ flex: 1 }}>
+                <label>Year / Edition</label>
+                <input
+                  type="text"
+                  placeholder="e.g. 2026"
+                  value={inputEventYear}
+                  onChange={(e) => setInputEventYear(e.target.value)}
+                />
               </div>
             </div>
+
             <button
               type="button"
               className="admin-btn admin-btn-primary"
               onClick={handleSaveBranding}
               disabled={isSavingBranding}
-              style={{ marginTop: '0.7rem' }}
             >
               {isSavingBranding ? '💾 Saving Branding to DB...' : '💾 Save Event Branding'}
             </button>
