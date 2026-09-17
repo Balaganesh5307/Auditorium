@@ -15,6 +15,10 @@ export default function AdminPanel() {
     setTeamsFromUpload,
     updateSingleTeam,
     resetToDefaults,
+    dbStatus,
+    dbMessage,
+    syncAllToSupabase,
+    refreshFromSupabase,
   } = useAdmin();
 
   const [numRows, setNumRows] = useState<string | number>(rows.length);
@@ -262,6 +266,43 @@ export default function AdminPanel() {
         </div>
 
         <div className="admin-panel-body">
+          {/* Supabase Cloud Database Status */}
+          <div className="db-sync-section">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
+              <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#334155' }}>
+                Supabase Database
+              </span>
+              <span className={`db-status-badge ${dbStatus}`}>
+                ● {dbStatus.toUpperCase()}
+              </span>
+            </div>
+            {dbMessage && (
+              <p className="admin-hint" style={{ marginBottom: '0.6rem', fontSize: '0.73rem', color: '#64748b' }}>
+                {dbMessage}
+              </p>
+            )}
+            <div style={{ display: 'flex', gap: '0.4rem' }}>
+              <button
+                type="button"
+                className="admin-btn admin-btn-secondary"
+                onClick={refreshFromSupabase}
+                style={{ flex: 1, fontSize: '0.72rem', padding: '0.4rem' }}
+                title="Fetch latest tables from Supabase"
+              >
+                🔄 Refresh from DB
+              </button>
+              <button
+                type="button"
+                className="admin-btn admin-btn-secondary"
+                onClick={syncAllToSupabase}
+                style={{ flex: 1, fontSize: '0.72rem', padding: '0.4rem' }}
+                title="Push all tables to Supabase"
+              >
+                ☁️ Push All to DB
+              </button>
+            </div>
+          </div>
+
           {/* Grid Configuration */}
           <div className="admin-section">
             <h4 className="admin-section-title">Grid Configuration</h4>
