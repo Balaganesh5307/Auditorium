@@ -117,7 +117,6 @@ Seat Arrangements/
 │   └── main.tsx             # Application entry point
 ├── package.json             # Node dependencies & scripts
 ├── REQUIREMENTS.md          # System and functional requirements document
-├── requirements.txt         # Package dependencies reference
 └── vite.config.ts           # Vite configuration
 ```
 
