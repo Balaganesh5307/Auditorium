@@ -7,7 +7,6 @@ import { MapControls } from '@react-three/drei';
 export type CameraState = 'INTRO' | 'AUDITORIUM' | 'TABLE';
 
 // Camera presets
-// Camera presets
 const CAMERA_PRESETS = {
   INTRO: {
     position: new THREE.Vector3(0, 2, 24),
@@ -15,9 +14,8 @@ const CAMERA_PRESETS = {
     fov: 60,
   },
   AUDITORIUM: {
-    // Top-down bird's-eye map view with safe 2.5° offset to prevent gimbal lock
-    position: new THREE.Vector3(0, 68, 1),
-    lookAt: new THREE.Vector3(0, 0, -2),
+    position: new THREE.Vector3(0, 35, 0.001), // Tiny offset prevents gimbal lock
+    lookAt: new THREE.Vector3(0, 0, 0),
     fov: 50,
   },
 };
@@ -41,75 +39,47 @@ export default function CameraController({
   cols = DEFAULT_COLS,
 }: CameraControllerProps) {
   const { camera, size } = useThree();
+  // PERF: Use a ref instead of useState for isAnimating.
+  // The old useState triggered a React re-render of the entire Canvas tree
+  // every time an animation started/stopped, which cascaded through all 3D components.
   const isAnimatingRef = useRef(false);
   const controlsRef = useRef<any>(null);
 
   const safeRows = rows || DEFAULT_ROWS;
   const safeCols = cols || DEFAULT_COLS;
 
-  // Dynamic layout metrics matching Auditorium.tsx
+  // Dynamic limits based on grid
   const COL_SPACING = 5.5;
   const ROW_SPACING = 4.8;
-  const floorWidth = Math.max(20, safeCols.length * COL_SPACING + 22);
-  const floorDepth = Math.max(30, safeRows.length * ROW_SPACING + 27);
-  const halfW = floorWidth / 2;
-  const halfD = floorDepth / 2;
+  const panLimitX = Math.max(18, (safeCols.length * COL_SPACING) / 2 + 8.5);
+  const panLimitZ = Math.max(22, (safeRows.length * ROW_SPACING) / 2 + 6);
 
-  // Pan boundaries: comfortably encompasses stage, management area, and all seating rows
-  const minX = -halfW + 6;
-  const maxX = halfW - 6;
-  const minZ = -halfD + 4;
-  const maxZ = halfD - 4;
-
-  // Responsive framing based on viewport aspect ratio (mobile vs desktop)
   const aspect = size.width / Math.max(1, size.height);
-  const isMobile = aspect < 1.0 || size.width < 768;
-
-  // Calculate required height so all columns and row labels fit neatly horizontally in portrait mobile
+  const isMobile = aspect < 1.0;
   const vFovRad = (50 / 2) * (Math.PI / 180);
   const contentWidth = Math.max(34, safeCols.length * COL_SPACING + 16);
   const heightForWidth = contentWidth / (2 * Math.tan(vFovRad) * aspect);
-  const contentDepth = Math.max(48, safeRows.length * ROW_SPACING + 22);
-  const heightForDepth = contentDepth / (2 * Math.tan(vFovRad));
-
-  // In mobile view, height scales with aspect so the entire width is framed just like the user's image
   const cameraHeight = isMobile
-    ? Math.max(heightForWidth, heightForDepth * 0.96)
-    : Math.max(54, Math.max(safeRows.length * ROW_SPACING * 1.05, safeCols.length * COL_SPACING * 1.1));
-
-  // Target centered with stage right at the top
-  const targetLookAtZ = isMobile ? -3.5 : -2.0;
-  // 90° top-down angle looking straight down onto the floor plane (0.05 safe offset avoids gimbal lock)
-  const cameraZ = targetLookAtZ + 0.05;
+    ? Math.max(heightForWidth, 75)
+    : Math.max(35, Math.max(safeRows.length * ROW_SPACING, safeCols.length * COL_SPACING) * 0.9);
+  const targetZ = isMobile ? -3.5 : 0;
 
   // Store limits in refs to avoid stale closures in useFrame
-  const limitsRef = useRef({ minX, maxX, minZ, maxZ });
-  limitsRef.current = { minX, maxX, minZ, maxZ };
+  const limitsRef = useRef({ panLimitX, panLimitZ });
+  limitsRef.current = { panLimitX, panLimitZ };
 
   const stateRef = useRef({ cameraState });
   stateRef.current = { cameraState };
 
-  // Helper to directly activate/deactivate Three.js MapControls
-  const setControlsActive = useCallback((active: boolean) => {
-    if (controlsRef.current) {
-      controlsRef.current.enabled = active;
-      controlsRef.current.enablePan = active;
-      controlsRef.current.enableZoom = active;
-      if (active) {
-        controlsRef.current.update();
-      }
-    }
-  }, []);
-
-  // Restrict panning strictly within the walls without fighting inertia
+  // Restrict panning strictly within the walls — only runs meaningful work in AUDITORIUM
   useFrame(() => {
     const { cameraState: cs } = stateRef.current;
     if (cs !== 'AUDITORIUM' || isAnimatingRef.current || !controlsRef.current) return;
 
     const target = controlsRef.current.target;
-    const { minX: x1, maxX: x2, minZ: z1, maxZ: z2 } = limitsRef.current;
-    const clampedX = THREE.MathUtils.clamp(target.x, x1, x2);
-    const clampedZ = THREE.MathUtils.clamp(target.z, z1, z2);
+    const { panLimitX: lx, panLimitZ: lz } = limitsRef.current;
+    const clampedX = THREE.MathUtils.clamp(target.x, -lx, lx);
+    const clampedZ = THREE.MathUtils.clamp(target.z, -lz, lz);
 
     if (target.x !== clampedX || target.z !== clampedZ) {
       const diffX = clampedX - target.x;
@@ -130,33 +100,16 @@ export default function CameraController({
       ease: string,
       onComplete?: () => void
     ) => {
-      // Safely deactivate user controls during flight so drags don't fight GSAP
-      setControlsActive(false);
-
       // Kill any running animations
       gsap.killTweensOf(camera.position);
+      if (controlsRef.current) gsap.killTweensOf(controlsRef.current.target);
       gsap.killTweensOf(camera);
 
       isAnimatingRef.current = true;
 
-      // Track the intermediate lookAt point smoothly without invoking controls.update()
-      const currentLookAt = controlsRef.current
-        ? controlsRef.current.target.clone()
-        : new THREE.Vector3(0, 2, 0);
-
       const tl = gsap.timeline({
         onComplete: () => {
           isAnimatingRef.current = false;
-          // Synchronize controls once at the final destination
-          if (controlsRef.current) {
-            controlsRef.current.target.set(targetLookAt.x, targetLookAt.y, targetLookAt.z);
-            camera.position.set(targetPos.x, targetPos.y, targetPos.z);
-            controlsRef.current.update();
-          }
-          // Re-enable controls if we finished in AUDITORIUM mode
-          if (stateRef.current.cameraState === 'AUDITORIUM') {
-            setControlsActive(true);
-          }
           onComplete?.();
         },
       });
@@ -173,20 +126,23 @@ export default function CameraController({
         0
       );
 
-      tl.to(
-        currentLookAt,
-        {
-          x: targetLookAt.x,
-          y: targetLookAt.y,
-          z: targetLookAt.z,
-          duration,
-          ease,
-          onUpdate: () => {
-            camera.lookAt(currentLookAt);
+      if (controlsRef.current) {
+        tl.to(
+          controlsRef.current.target,
+          {
+            x: targetLookAt.x,
+            y: targetLookAt.y,
+            z: targetLookAt.z,
+            duration,
+            ease,
+            onUpdate: () => controlsRef.current?.update(),
           },
-        },
-        0
-      );
+          0
+        );
+      } else {
+        // Fallback if controls aren't mounted yet
+        camera.lookAt(targetLookAt);
+      }
 
       const perspCam = camera as THREE.PerspectiveCamera;
       if (Math.abs(perspCam.fov - targetFov) > 0.5) {
@@ -204,7 +160,7 @@ export default function CameraController({
         );
       }
     },
-    [camera, setControlsActive]
+    [camera]
   );
 
   // Set initial camera position immediately (no animation)
@@ -217,7 +173,6 @@ export default function CameraController({
       if (controlsRef.current) {
         controlsRef.current.target.copy(s.lookAt);
         controlsRef.current.update();
-        setControlsActive(false);
       } else {
         camera.lookAt(s.lookAt);
       }
@@ -225,24 +180,12 @@ export default function CameraController({
       perspCam.fov = s.fov;
       perspCam.updateProjectionMatrix();
     }
-  }, [camera, setControlsActive]);
-
-  // Track previous state to prevent unnecessary re-animations on window resize / state update
-  const prevStateRef = useRef<CameraState | null>(null);
-  const prevTablePosRef = useRef<string | null>(null);
+  }, [camera]);
 
   // React to camera state changes
   useEffect(() => {
+    // Skip the very first render (initial position already set above)
     if (!initialized.current) return;
-
-    const posKey = selectedTablePosition ? selectedTablePosition.join(',') : null;
-    const stateChanged = prevStateRef.current !== cameraState;
-    const tablePosChanged = cameraState === 'TABLE' && prevTablePosRef.current !== posKey;
-
-    if (!stateChanged && !tablePosChanged) return;
-
-    prevStateRef.current = cameraState;
-    prevTablePosRef.current = posKey;
 
     switch (cameraState) {
       case 'INTRO': {
@@ -251,9 +194,10 @@ export default function CameraController({
         break;
       }
       case 'AUDITORIUM': {
-        const targetLookAt = new THREE.Vector3(0, 0, targetLookAtZ);
-        const dynamicPos = new THREE.Vector3(0, cameraHeight, cameraZ);
-        animateCamera(dynamicPos, targetLookAt, 50, 1.8, 'power2.inOut', onTransitionComplete);
+        const s = CAMERA_PRESETS.AUDITORIUM;
+        const dynamicPos = new THREE.Vector3(0, cameraHeight, 0.001);
+        const dynamicLookAt = new THREE.Vector3(0, 0, targetZ);
+        animateCamera(dynamicPos, dynamicLookAt, s.fov, 2.0, 'power2.inOut', onTransitionComplete);
         break;
       }
       case 'TABLE': {
@@ -267,23 +211,24 @@ export default function CameraController({
         break;
       }
     }
-  }, [cameraState, selectedTablePosition, cameraHeight, targetLookAtZ, cameraZ, animateCamera, onTransitionComplete]);
+  }, [cameraState, selectedTablePosition, cameraHeight, targetZ, animateCamera, onTransitionComplete]);
+
+  // Allow map panning when in AUDITORIUM state
+  const controlsEnabled = cameraState === 'AUDITORIUM';
 
   return (
     <MapControls
       ref={controlsRef}
-      enabled={cameraState === 'AUDITORIUM'}
-      enablePan={true}
-      enableZoom={true}
+      enabled={true}
+      enablePan={controlsEnabled}
+      enableZoom={controlsEnabled}
       enableRotate={false}
-      screenSpacePanning={true}
       enableDamping
-      dampingFactor={0.09}
-      panSpeed={1.4}
-      minDistance={8}
-      maxDistance={180}
+      dampingFactor={0.05}
+      minDistance={5}
+      maxDistance={120}
+      maxPolarAngle={Math.PI} // Remove limits so GSAP can animate freely
       minPolarAngle={0}
-      maxPolarAngle={Math.PI}
       touches={{
         ONE: THREE.TOUCH.PAN,
         TWO: THREE.TOUCH.DOLLY_PAN,
