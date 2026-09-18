@@ -17,8 +17,8 @@ const MAT_STAIR = new THREE.MeshStandardMaterial({ color: '#f8f8f8', roughness: 
 const MAT_STRINGER = new THREE.MeshStandardMaterial({ color: '#e2e2e2', roughness: 0.5 });
 const MAT_ROOM_FLOOR = new THREE.MeshStandardMaterial({ color: '#f4f5f8', roughness: 0.85, metalness: 0.02 });
 const MAT_ROOM_WALL = new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 0.25, emissive: '#ffffff', emissiveIntensity: 0.25 });
-const MAT_RED_ACCENT = new THREE.MeshStandardMaterial({ color: '#C00020', emissive: '#C00020', emissiveIntensity: 0.3 });
-const MAT_RED_SIDE = new THREE.MeshStandardMaterial({ color: '#C00020', emissive: '#C00020', emissiveIntensity: 0.15 });
+const MAT_RED_ACCENT = new THREE.MeshStandardMaterial({ color: '#C00020', emissive: '#C00020', emissiveIntensity: 0.08 });
+const MAT_RED_SIDE = new THREE.MeshStandardMaterial({ color: '#C00020', emissive: '#C00020', emissiveIntensity: 0.05 });
 const MAT_WALL_BACK = new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 0.25, emissive: '#ffffff', emissiveIntensity: 0.25 });
 const MAT_WALL_SIDE = new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 0.25, emissive: '#ffffff', emissiveIntensity: 0.25 });
 

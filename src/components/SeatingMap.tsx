@@ -53,16 +53,48 @@ export function getTablePositionDynamic(
   return [x, 0, z];
 }
 
-// Memoized row labels component — only re-renders when rows/cols change
+// Memoized column numbers component — displays numbers 1, 2, 3... above Row A only
+const ColumnHeaders = memo(function ColumnHeaders({ rows, cols }: { rows: string[]; cols: number[] }) {
+  const safeRows = rows || DEFAULT_ROWS;
+  const safeCols = cols || DEFAULT_COLS;
+  if (safeRows.length === 0 || safeCols.length === 0) return null;
+
+  // Row A is the first row
+  const rowA = safeRows[0];
+  const [, , zRowA] = getTablePositionDynamic(rowA, 1, safeRows, safeCols);
+  const zAboveA = zRowA - 3.8;
+
+  return (
+    <>
+      {/* Column numbers above Row A only */}
+      {safeCols.map((col) => {
+        const [x] = getTablePositionDynamic(rowA, col, safeRows, safeCols);
+        return (
+          <Text
+            key={`col-a-${col}`}
+            position={[x, 0.08, zAboveA]}
+            rotation={[-Math.PI / 2, 0, 0]}
+            fontSize={1.9}
+            color="#C00020"
+            fillOpacity={0.88}
+            anchorX="center"
+            anchorY="middle"
+          >
+            {col}
+          </Text>
+        );
+      })}
+    </>
+  );
+});
+
+// Memoized row labels component — displays alphabet letters on the left side only
 const RowLabels = memo(function RowLabels({ rows, cols }: { rows: string[]; cols: number[] }) {
   return (
     <>
       {rows.map((row) => {
         const [leftTableX, , z] = getTablePositionDynamic(row, 1, rows, cols);
-        const [rightTableX] = getTablePositionDynamic(row, cols[cols.length - 1], rows, cols);
-
         const leftX = leftTableX - ROW_LABEL_OFFSET;
-        const rightX = rightTableX + ROW_LABEL_OFFSET;
 
         return (
           <group key={row}>
@@ -72,17 +104,7 @@ const RowLabels = memo(function RowLabels({ rows, cols }: { rows: string[]; cols
               rotation={[-Math.PI / 2, 0, 0]}
               fontSize={2.2}
               color="#C00020"
-              anchorX="center"
-              anchorY="middle"
-            >
-              {row}
-            </Text>
-            {/* Right side row letter */}
-            <Text
-              position={[rightX, 0.08, z]}
-              rotation={[-Math.PI / 2, 0, 0]}
-              fontSize={2.2}
-              color="#C00020"
+              fillOpacity={0.88}
               anchorX="center"
               anchorY="middle"
             >
@@ -142,6 +164,9 @@ const SeatingMap = memo(function SeatingMap({
           />
         );
       })}
+
+      {/* Column numbers above Row A & Row F */}
+      <ColumnHeaders rows={safeRows} cols={safeCols} />
 
       {/* Row labels */}
       <RowLabels rows={safeRows} cols={safeCols} />

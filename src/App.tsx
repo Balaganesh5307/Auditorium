@@ -57,12 +57,7 @@ export default function App() {
 
     setTimeout(() => {
       setCameraState('AUDITORIUM');
-    }, 500);
-
-    setTimeout(() => {
-      setAppState('auditorium');
-      transitioning.current = false;
-    }, 2500);
+    }, 400);
   }, []);
 
   const handleTableSelect = useCallback(
@@ -123,6 +118,7 @@ export default function App() {
 
   const handleTransitionComplete = useCallback(() => {
     transitioning.current = false;
+    setAppState((prev) => (prev === 'entering' ? 'auditorium' : prev));
   }, []);
 
   const showIntro = appState === 'intro' || appState === 'entering';
