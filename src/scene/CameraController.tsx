@@ -60,7 +60,7 @@ export default function CameraController({
   const contentWidth = Math.max(34, safeCols.length * COL_SPACING + 16);
   const heightForWidth = contentWidth / (2 * Math.tan(vFovRad) * aspect);
   const cameraHeight = isMobile
-    ? Math.max(heightForWidth, 75)
+    ? Math.max(heightForWidth * 0.8, 40)
     : Math.max(35, Math.max(safeRows.length * ROW_SPACING, safeCols.length * COL_SPACING) * 0.9);
   const targetZ = isMobile ? -3.5 : 0;
 
