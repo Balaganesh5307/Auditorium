@@ -20,8 +20,8 @@ const CAMERA_PRESETS = {
   },
 };
 
-const DEFAULT_ROWS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L'];
-const DEFAULT_COLS = [1, 2, 3, 4, 5];
+const DEFAULT_ROWS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'];
+const DEFAULT_COLS = [1, 2, 3, 4, 5, 6];
 
 interface CameraControllerProps {
   cameraState: CameraState;

@@ -237,8 +237,8 @@ export default function AdminPanel() {
 
   const handleReset = useCallback(() => {
     resetToDefaults();
-    setNumRows(12);
-    setNumCols(5);
+    setNumRows(10);
+    setNumCols(6);
     setNumTablesInput(60);
     setUploadStatus('Reset to defaults!');
     setError(null);

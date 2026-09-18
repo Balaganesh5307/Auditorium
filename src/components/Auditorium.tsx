@@ -7,8 +7,8 @@ const COL_SPACING = 5.5;
 const ROW_SPACING = 4.8;
 const PADDING = 6;
 
-const DEFAULT_ROWS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L'];
-const DEFAULT_COLS = [1, 2, 3, 4, 5];
+const DEFAULT_ROWS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'];
+const DEFAULT_COLS = [1, 2, 3, 4, 5, 6];
 
 // ── Shared materials — static instances ──
 const MAT_FLOOR = new THREE.MeshStandardMaterial({ color: '#fdfdfd', roughness: 0.9, metalness: 0.05 });

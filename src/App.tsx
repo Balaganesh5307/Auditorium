@@ -6,7 +6,7 @@ import Navigation from './components/Navigation';
 import TeamSearch from './components/TeamSearch';
 import type { CameraState } from './scene/CameraController';
 import { useAdmin } from './context/AdminContext';
-import { getTablePositionDynamic } from './components/SeatingMap';
+import { getTablePosition } from './components/SeatingMap';
 
 // Dynamically code-split Admin components so they NEVER load over the network for regular users
 const AdminPanel = lazy(() => import('./components/AdminPanel'));
@@ -14,8 +14,8 @@ const AdminLoginModal = lazy(() => import('./components/AdminLoginModal'));
 
 // Compute table positions (mirroring SeatingMap logic)
 
-const DEFAULT_ROWS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L'];
-const DEFAULT_COLS = [1, 2, 3, 4, 5];
+const DEFAULT_ROWS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'];
+const DEFAULT_COLS = [1, 2, 3, 4, 5, 6];
 
 export default function App() {
   const {
@@ -41,9 +41,7 @@ export default function App() {
 
   const selectedTablePosition = useMemo(() => {
     if (!selectedTableId) return null;
-    const row = selectedTableId.charAt(0);
-    const col = parseInt(selectedTableId.substring(1));
-    const pos = getTablePositionDynamic(row, col, rows, cols);
+    const pos = getTablePosition(selectedTableId, rows, cols);
     // +2 matches SeatingMap group offset
     return [pos[0], pos[1], pos[2] + 2] as [number, number, number];
   }, [selectedTableId, rows, cols]);

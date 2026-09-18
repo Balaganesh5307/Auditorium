@@ -70,8 +70,8 @@ const lastNames = [
   'Pillai', 'Mishra', 'Chauhan', 'Malhotra',
 ];
 
-const rows = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L'];
-const cols = [1, 2, 3, 4, 5];
+const rows = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'];
+const cols = [1, 2, 3, 4, 5, 6];
 
 function generateTeams(): TeamsMap {
   const teams: TeamsMap = {};

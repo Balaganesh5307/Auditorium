@@ -8,8 +8,8 @@ import CinematicEffects from './CinematicEffects';
 import SeatingMap from '../components/SeatingMap';
 import type { TeamsMap } from '../data/teams';
 
-const DEFAULT_ROWS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L'];
-const DEFAULT_COLS = [1, 2, 3, 4, 5];
+const DEFAULT_ROWS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'];
+const DEFAULT_COLS = [1, 2, 3, 4, 5, 6];
 
 interface AuditoriumSceneProps {
   cameraState: CameraState;

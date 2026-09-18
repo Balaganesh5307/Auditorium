@@ -19,9 +19,9 @@ import {
 } from '../lib/supabase';
 
 // Default grid config
-const DEFAULT_ROWS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L'];
-const DEFAULT_COLS = [1, 2, 3, 4, 5];
-const DEFAULT_NUM_TABLES = 60; // 12 × 5
+const DEFAULT_ROWS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'];
+const DEFAULT_COLS = [1, 2, 3, 4, 5, 6];
+const DEFAULT_NUM_TABLES = 60; // 10 × 6
 
 export const DEFAULT_EVENT_NAME = 'BUILDATHON';
 export const DEFAULT_EVENT_DATE = 'September 2026';
